@@ -46,7 +46,6 @@ export function StudentsProvider({ children }: PropsWithChildren) {
 
   // SAVE: write the student list whenever it changes.
   useEffect(() => {
-    // Skip saving while the initial AsyncStorage load is still running.
     if (isLoading) return;
 
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(students)).catch((error) =>
