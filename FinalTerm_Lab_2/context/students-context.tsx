@@ -12,7 +12,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initialStudents, Student } from "../constants/students";
 import { StudentsAction, StudentsState, studentsReducer } from "./students-reducer";
 
-const STORAGE_KEY = "@student_directory_students";
+const STORAGE_KEY = "@student_directory";
 
 type StudentsContextValue = {
   students: Student[];
@@ -30,54 +30,29 @@ export function StudentsProvider({ children }: PropsWithChildren) {
     initialStudents
   );
   const [isLoading, setIsLoading] = useState(true);
-  const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Load saved students once when the app starts.
+  // LOAD: read the saved student list once when the app starts.
   useEffect(() => {
-    let mounted = true;
-
-    const loadStudents = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-
-        if (saved) {
-          const parsed: unknown = JSON.parse(saved);
-
-          if (Array.isArray(parsed)) {
-            dispatch({ type: "LOAD", payload: parsed as Student[] });
-          }
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (raw) {
+          const saved = JSON.parse(raw) as StudentsState;
+          dispatch({ type: "LOAD", payload: saved });
         }
-      } catch (error) {
-        console.error("Failed to load students from AsyncStorage:", error);
-      } finally {
-        if (mounted) {
-          setHasLoaded(true);
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadStudents();
-
-    return () => {
-      mounted = false;
-    };
+      })
+      .catch((error) => console.error("AsyncStorage load error:", error))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  // Save the current list whenever it changes, but only after the initial load.
+  // SAVE: write the student list whenever it changes.
   useEffect(() => {
-    if (!hasLoaded) return;
+    // Skip saving while the initial AsyncStorage load is still running.
+    if (isLoading) return;
 
-    const saveStudents = async () => {
-      try {
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(students));
-      } catch (error) {
-        console.error("Failed to save students to AsyncStorage:", error);
-      }
-    };
-
-    saveStudents();
-  }, [students, hasLoaded]);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(students)).catch((error) =>
+      console.error("AsyncStorage save error:", error)
+    );
+  }, [students]);
 
   const addStudent = useCallback((student: Student) => {
     dispatch({ type: "ADD_STUDENT", payload: student });
