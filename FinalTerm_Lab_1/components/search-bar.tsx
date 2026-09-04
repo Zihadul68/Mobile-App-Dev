@@ -1,15 +1,11 @@
 import React, {
   forwardRef,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
-import {
-  StyleSheet,
-  TextInput,
-  TextInputProps,
-  View,
-} from "react-native";
+import { StyleSheet, TextInput, TextInputProps, View } from "react-native";
 import { useDebounce } from "../hooks/use-debounce";
 
 export type SearchBarHandle = {
@@ -27,24 +23,25 @@ const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(
   ({ value, onChangeText, debounceDelay = 300, ...props }, ref) => {
     const inputRef = useRef<TextInput>(null);
     const [localValue, setLocalValue] = useState(value);
-
     const debouncedValue = useDebounce(localValue, debounceDelay);
 
-    useImperativeHandle(ref, () => ({
-      focus: () => inputRef.current?.focus(),
-      clear: () => {
-        setLocalValue("");
-        onChangeText("");
-      },
-    }), [onChangeText]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => inputRef.current?.focus(),
+        clear: () => {
+          setLocalValue("");
+          onChangeText("");
+        },
+      }),
+      [onChangeText]
+    );
 
-    React.useEffect(() => {
-      if (debouncedValue !== value) {
-        onChangeText(debouncedValue);
-      }
+    useEffect(() => {
+      if (debouncedValue !== value) onChangeText(debouncedValue);
     }, [debouncedValue, value, onChangeText]);
 
-    React.useEffect(() => {
+    useEffect(() => {
       setLocalValue(value);
     }, [value]);
 
@@ -67,9 +64,7 @@ const SearchBar = forwardRef<SearchBarHandle, SearchBarProps>(
 SearchBar.displayName = "SearchBar";
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
+  container: { marginBottom: 16 },
   input: {
     backgroundColor: "#f1f5f9",
     borderRadius: 10,
