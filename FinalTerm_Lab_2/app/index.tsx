@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import SearchBar, { SearchBarHandle } from "../components/search-bar";
+import AddStudentForm from "../components/add-student-form";
 import StatBar from "../components/stat-bar";
 import StudentCard from "../components/student-card";
 import { useStudents } from "../context/students-context";
@@ -19,8 +20,9 @@ import { Student } from "../constants/students";
 const SEARCH_DEBOUNCE_DELAY = 300;
 
 export default function StudentDirectoryScreen() {
-  const { students, removeStudent, resetStudents, isLoading } = useStudents();
+  const { students, addStudent, removeStudent, resetStudents, isLoading } = useStudents();
   const [search, setSearch] = useState("");
+  const [isAddVisible, setIsAddVisible] = useState(false);
   const searchRef = useRef<SearchBarHandle>(null);
 
   const filteredStudents = useMemo(() => {
@@ -29,7 +31,7 @@ export default function StudentDirectoryScreen() {
     if (!query) return students;
 
     return students.filter((student) => {
-      const haystack = [student.name, student.email, ...student.skills]
+      const haystack = [student.name, student.studentId, student.email, ...student.skills]
         .join(" ")
         .toLowerCase();
 
@@ -78,12 +80,17 @@ export default function StudentDirectoryScreen() {
             <Text style={styles.subtitle}>Search and manage students</Text>
           </View>
 
-          <Pressable
-            style={styles.statisticsButton}
-            onPress={() => router.push("/statistics")}
-          >
-            <Text style={styles.statisticsText}>Stats</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable style={styles.addButton} onPress={() => setIsAddVisible(true)}>
+              <Text style={styles.addText}>+ Add</Text>
+            </Pressable>
+            <Pressable
+              style={styles.statisticsButton}
+              onPress={() => router.push("/statistics")}
+            >
+              <Text style={styles.statisticsText}>Stats</Text>
+            </Pressable>
+          </View>
         </View>
 
         <StatBar students={students} />
@@ -116,12 +123,19 @@ export default function StudentDirectoryScreen() {
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>No students found</Text>
               <Text style={styles.emptyText}>
-                Try a different name, email, or skill.
+                Try a different name, ID, email, or skill.
               </Text>
             </View>
           }
         />
       </View>
+
+      <AddStudentForm
+        visible={isAddVisible}
+        onClose={() => setIsAddVisible(false)}
+        onAdd={addStudent}
+        existingIds={students.map((student) => student.id)}
+      />
     </SafeAreaView>
   );
 }
@@ -137,8 +151,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  headerActions: { flexDirection: "row", gap: 8 },
   title: { fontSize: 26, fontWeight: "800", color: "#0f172a" },
   subtitle: { marginTop: 3, color: "#64748b" },
+  addButton: {
+    backgroundColor: "#2563eb",
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderRadius: 9,
+  },
+  addText: { color: "#fff", fontWeight: "700" },
   statisticsButton: {
     backgroundColor: "#0f172a",
     paddingHorizontal: 14,
