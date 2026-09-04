@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -18,52 +19,17 @@ import { Student } from "../constants/students";
 const SEARCH_DEBOUNCE_DELAY = 300;
 
 export default function StudentDirectoryScreen() {
-  const { students, removeStudent, resetStudents } = useStudents();
+  const { students, removeStudent, resetStudents, isLoading } = useStudents();
   const [search, setSearch] = useState("");
-  const [previousCountChange, setPreviousCountChange] = useState<number | null>(null);
-  const previousCount = useRef(students.length);
-  const badgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<SearchBarHandle>(null);
-
-  React.useEffect(() => {
-    const oldCount = previousCount.current;
-    const newCount = students.length;
-
-    if (oldCount !== newCount) {
-      const change = newCount - oldCount;
-      setPreviousCountChange(change);
-
-      if (badgeTimer.current) {
-        clearTimeout(badgeTimer.current);
-      }
-
-      badgeTimer.current = setTimeout(() => {
-        setPreviousCountChange(null);
-      }, 2000);
-    }
-
-    previousCount.current = newCount;
-
-    return () => {
-      if (badgeTimer.current) {
-        clearTimeout(badgeTimer.current);
-      }
-    };
-  }, [students.length]);
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) {
-      return students;
-    }
+    if (!query) return students;
 
     return students.filter((student) => {
-      const haystack = [
-        student.name,
-        student.email,
-        ...student.skills,
-      ]
+      const haystack = [student.name, student.email, ...student.skills]
         .join(" ")
         .toLowerCase();
 
@@ -92,6 +58,17 @@ export default function StudentDirectoryScreen() {
     [handleRemove]
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>Loading students...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -109,10 +86,7 @@ export default function StudentDirectoryScreen() {
           </Pressable>
         </View>
 
-        <StatBar
-          students={students}
-          previousCountChange={previousCountChange}
-        />
+        <StatBar students={students} />
 
         <SearchBar
           ref={searchRef}
@@ -153,68 +127,35 @@ export default function StudentDirectoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
+  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { marginTop: 10, color: "#64748b" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#0f172a",
-  },
-  subtitle: {
-    marginTop: 3,
-    color: "#64748b",
-  },
+  title: { fontSize: 26, fontWeight: "800", color: "#0f172a" },
+  subtitle: { marginTop: 3, color: "#64748b" },
   statisticsButton: {
     backgroundColor: "#0f172a",
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 9,
   },
-  statisticsText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
+  statisticsText: { color: "#fff", fontWeight: "700" },
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 10,
   },
-  resultText: {
-    color: "#64748b",
-    fontWeight: "600",
-  },
-  resetText: {
-    color: "#2563eb",
-    fontWeight: "700",
-  },
-  list: {
-    paddingBottom: 24,
-  },
-  empty: {
-    alignItems: "center",
-    paddingTop: 60,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  emptyText: {
-    marginTop: 6,
-    color: "#64748b",
-  },
+  resultText: { color: "#64748b", fontWeight: "600" },
+  resetText: { color: "#2563eb", fontWeight: "700" },
+  list: { paddingBottom: 24 },
+  empty: { alignItems: "center", paddingTop: 60 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
+  emptyText: { marginTop: 6, color: "#64748b" },
 });
