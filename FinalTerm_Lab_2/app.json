@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "Week06 Student Directory",
+    "slug": "week06-studentdirectory",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "week06studentdirectory",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
