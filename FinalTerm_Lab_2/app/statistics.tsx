@@ -1,9 +1,28 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { useStudents } from "../context/students-context";
 
 export default function StatisticsScreen() {
   const { students } = useStudents();
+  const previousCount = useRef(students.length);
+  const [countChange, setCountChange] = useState<number | null>(null);
+
+  useEffect(() => {
+    const oldCount = previousCount.current;
+    const newCount = students.length;
+
+    if (oldCount !== newCount) {
+      const change = newCount - oldCount;
+      setCountChange(change);
+
+      const timer = setTimeout(() => setCountChange(null), 2000);
+      previousCount.current = newCount;
+
+      return () => clearTimeout(timer);
+    }
+
+    previousCount.current = newCount;
+  }, [students.length]);
 
   const statistics = useMemo(() => {
     const totalSkills = students.reduce(
@@ -48,6 +67,14 @@ export default function StatisticsScreen() {
         <Text style={styles.subtitle}>
           Memoized statistics derived from the global student state.
         </Text>
+
+        {countChange !== null && countChange !== 0 && (
+          <View style={styles.changeBadge}>
+            <Text style={styles.changeText}>
+              {countChange > 0 ? "↑" : "↓"} {Math.abs(countChange)} {Math.abs(countChange) === 1 ? "added" : "removed"}
+            </Text>
+          </View>
+        )}
 
         <View style={styles.grid}>
           <Stat title="Total Students" value={statistics.totalStudents.toString()} />
@@ -106,7 +133,20 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 5,
     color: "#64748b",
-    marginBottom: 20,
+    marginBottom: 12,
+  },
+  changeBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#dcfce7",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    marginBottom: 12,
+  },
+  changeText: {
+    color: "#166534",
+    fontSize: 12,
+    fontWeight: "700",
   },
   grid: {
     flexDirection: "row",
