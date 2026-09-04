@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,6 +24,12 @@ export default function StudentDirectoryScreen() {
   const [search, setSearch] = useState("");
   const [isAddVisible, setIsAddVisible] = useState(false);
   const searchRef = useRef<SearchBarHandle>(null);
+
+  // Week 6: focus the search bar shortly after the screen mounts.
+  useEffect(() => {
+    const timer = setTimeout(() => searchRef.current?.focus(), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase();
