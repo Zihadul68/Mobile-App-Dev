@@ -6,6 +6,10 @@ module.exports = ({ config }) => ({
   orientation: "portrait",
   userInterfaceStyle: "light",
   scheme: "studentdirectoryfinal2",
+  experiments: {
+    ...config.experiments,
+    typedRoutes: true,
+  },
   extra: {
     ...config.extra,
     apiUrl:
