@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
   FlatList,
@@ -132,6 +131,7 @@ export default function StudentDirectoryScreen() {
           </View>
 
           <View style={styles.headerActions}>
+            {/* Week 9 accessibility audit: navigation actions now announce their purpose and result. */}
             <Pressable
               style={styles.addButton}
               onPress={() => setIsAddVisible(true)}
@@ -170,6 +170,7 @@ export default function StudentDirectoryScreen() {
             {filteredStudents.length === 1 ? "" : "s"}
           </Text>
 
+          {/* Week 9 accessibility audit: the reset action is explicitly identified for screen readers. */}
           <Pressable
             onPress={handleReset}
             accessibilityRole="button"
