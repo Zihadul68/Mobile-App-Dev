@@ -88,6 +88,8 @@ export default function AddStudentForm({ visible, onClose, onAdd, existingIds }:
             value={name}
             onChangeText={setName}
             style={styles.input}
+            accessibilityLabel="Student name"
+            accessibilityHint="Enter the student's full name"
           />
           <TextInput
             placeholder="Student ID (22-47087-1)"
@@ -95,6 +97,8 @@ export default function AddStudentForm({ visible, onClose, onAdd, existingIds }:
             onChangeText={setStudentId}
             style={styles.input}
             autoCapitalize="none"
+            accessibilityLabel="Student ID"
+            accessibilityHint="Enter the student ID in the required format"
           />
           <TextInput
             placeholder="Email"
@@ -103,21 +107,42 @@ export default function AddStudentForm({ visible, onClose, onAdd, existingIds }:
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
+            accessibilityLabel="Student email"
+            accessibilityHint="Enter the student's email address"
           />
           <TextInput
             placeholder="Skills (React Native, Firebase)"
             value={skills}
             onChangeText={setSkills}
             style={[styles.input, styles.skillsInput]}
+            accessibilityLabel="Student skills"
+            accessibilityHint="Enter one or more skills separated by commas"
           />
 
-          {!!error && <Text style={styles.error}>{error}</Text>}
+          {!!error && (
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
+          )}
 
           <View style={styles.actions}>
-            <Pressable style={styles.secondaryButton} onPress={closeForm}>
+            {/* Week 9 accessibility audit: labeled buttons let screen readers describe every action in the modal. */}
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={closeForm}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel adding student"
+              accessibilityHint="Closes the Add Student form without saving"
+            >
               <Text style={styles.secondaryText}>Cancel</Text>
             </Pressable>
-            <Pressable style={styles.primaryButton} onPress={handleAdd}>
+            <Pressable
+              style={styles.primaryButton}
+              onPress={handleAdd}
+              accessibilityRole="button"
+              accessibilityLabel="Add student"
+              accessibilityHint="Saves the student and closes the form"
+            >
               <Text style={styles.primaryText}>Add Student</Text>
             </Pressable>
           </View>
@@ -134,11 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 18,
   },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 20,
-  },
+  card: { backgroundColor: "#fff", borderRadius: 18, padding: 20 },
   title: { fontSize: 22, fontWeight: "800", color: "#0f172a" },
   subtitle: { marginTop: 5, marginBottom: 16, color: "#64748b" },
   input: {
