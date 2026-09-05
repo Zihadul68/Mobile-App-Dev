@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Pressable,
   SafeAreaView,
@@ -19,13 +20,58 @@ import { Student } from "../constants/students";
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
+function SkeletonItem() {
+  const opacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View style={[styles.skeletonCard, { opacity }]} accessible={false}>
+      <View style={styles.skeletonName} />
+      <View style={styles.skeletonLine} />
+      <View style={[styles.skeletonLine, styles.skeletonShort]} />
+      <View style={styles.skeletonButton} />
+    </Animated.View>
+  );
+}
+
+function SkeletonList() {
+  return (
+    <FlatList
+      data={Array.from({ length: 6 }, (_, index) => String(index))}
+      keyExtractor={(item) => item}
+      renderItem={() => <SkeletonItem />}
+      contentContainerStyle={styles.list}
+      showsVerticalScrollIndicator={false}
+      accessibilityLabel="Loading student list"
+    />
+  );
+}
+
 export default function StudentDirectoryScreen() {
   const { students, addStudent, removeStudent, resetStudents, isLoading } = useStudents();
   const [search, setSearch] = useState("");
   const [isAddVisible, setIsAddVisible] = useState(false);
   const searchRef = useRef<SearchBarHandle>(null);
 
-  // Week 6: focus the search bar shortly after the screen mounts.
   useEffect(() => {
     const timer = setTimeout(() => searchRef.current?.focus(), 300);
     return () => clearTimeout(timer);
@@ -46,9 +92,7 @@ export default function StudentDirectoryScreen() {
   }, [students, search]);
 
   const handleRemove = useCallback(
-    (id: string) => {
-      removeStudent(id);
-    },
+    (id: string) => removeStudent(id),
     [removeStudent]
   );
 
@@ -69,9 +113,10 @@ export default function StudentDirectoryScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
+        <View style={styles.container}>
+          <Text style={styles.title}>Student Directory</Text>
           <Text style={styles.loadingText}>Loading students...</Text>
+          <SkeletonList />
         </View>
       </SafeAreaView>
     );
@@ -87,12 +132,21 @@ export default function StudentDirectoryScreen() {
           </View>
 
           <View style={styles.headerActions}>
-            <Pressable style={styles.addButton} onPress={() => setIsAddVisible(true)}>
+            <Pressable
+              style={styles.addButton}
+              onPress={() => setIsAddVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add new student"
+              accessibilityHint="Opens the Add Student form"
+            >
               <Text style={styles.addText}>+ Add</Text>
             </Pressable>
             <Pressable
               style={styles.statisticsButton}
               onPress={() => router.push("/statistics")}
+              accessibilityRole="button"
+              accessibilityLabel="Open statistics"
+              accessibilityHint="Opens the student statistics screen"
             >
               <Text style={styles.statisticsText}>Stats</Text>
             </Pressable>
@@ -106,6 +160,8 @@ export default function StudentDirectoryScreen() {
           value={search}
           onChangeText={setSearch}
           debounceDelay={SEARCH_DEBOUNCE_DELAY}
+          accessibilityLabel="Search students"
+          accessibilityHint="Search by name, student ID, email, or skill"
         />
 
         <View style={styles.actionRow}>
@@ -114,7 +170,12 @@ export default function StudentDirectoryScreen() {
             {filteredStudents.length === 1 ? "" : "s"}
           </Text>
 
-          <Pressable onPress={handleReset}>
+          <Pressable
+            onPress={handleReset}
+            accessibilityRole="button"
+            accessibilityLabel="Reset student list"
+            accessibilityHint="Restores the original seed students"
+          >
             <Text style={styles.resetText}>Reset</Text>
           </Pressable>
         </View>
@@ -127,9 +188,13 @@ export default function StudentDirectoryScreen() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No students found</Text>
+              <Text style={styles.emptyTitle}>
+                {search.trim() ? "No results" : "No students yet"}
+              </Text>
               <Text style={styles.emptyText}>
-                Try a different name, ID, email, or skill.
+                {search.trim()
+                  ? `No students match "${search.trim()}".`
+                  : "Tap + Add to add the first student."}
               </Text>
             </View>
           }
@@ -149,8 +214,7 @@ export default function StudentDirectoryScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f8fafc" },
   container: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  loadingText: { marginTop: 10, color: "#64748b" },
+  loadingText: { marginBottom: 8, color: "#64748b" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -185,5 +249,34 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 24 },
   empty: { alignItems: "center", paddingTop: 60 },
   emptyTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
-  emptyText: { marginTop: 6, color: "#64748b" },
+  emptyText: { marginTop: 6, color: "#64748b", textAlign: "center" },
+  skeletonCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  skeletonName: {
+    width: "52%",
+    height: 18,
+    borderRadius: 5,
+    backgroundColor: "#cbd5e1",
+  },
+  skeletonLine: {
+    width: "78%",
+    height: 12,
+    borderRadius: 4,
+    backgroundColor: "#e2e8f0",
+    marginTop: 10,
+  },
+  skeletonShort: { width: "58%" },
+  skeletonButton: {
+    width: 76,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#e2e8f0",
+    marginTop: 14,
+  },
 });
