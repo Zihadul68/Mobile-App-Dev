@@ -1,41 +1,52 @@
-# Final Lab Task 2 – Student Directory
+# StudentDirectory — Final Cumulative Implementation
 
-This folder contains the cumulative StudentDirectory project used for the final-term lab work. It preserves the earlier Week 7 AsyncStorage persistence work and adds the Week 9 **Final Lab Task 2** requirements.
+This folder contains the cumulative StudentDirectory implementation through **Week 9** of AIUB Mobile Application Development (Summer 2025-26).
 
-## Final Lab Task 2 – Week 9
+## Week progression
 
-### Feature 1 — Skeleton Loading
-- Replaces the full-screen loading spinner with 6 StudentCard-shaped skeleton rows.
-- Uses `Animated.loop` and `Animated.sequence` to pulse opacity from 1.0 to 0.3 and back.
+- **Week 6:** advanced hooks, Statistics screen, department breakdown, top-5 skills, debounced search, configurable debounce, search auto-focus, previous-count badge, and three-tab navigation.
+- **Week 7:** AsyncStorage persistence was implemented in earlier git commits.
+- **Week 8:** AsyncStorage is intentionally replaced by the Express server as the single source of truth, as required by the Week 8 manual.
+- **Week 8 Final Lab Task 1:** GET-by-id, PATCH bio editing, and server-side search are implemented.
+- **Week 9:** loading/error states, empty states, accessibility, custom app configuration, skeleton loading, and EAS preview configuration are implemented.
 
-### Feature 2 — Accessibility Audit & Fix
-- Main Add and Statistics controls have `accessibilityRole`, `accessibilityLabel`, and `accessibilityHint`.
-- Reset has screen-reader instructions.
-- Student Remove controls are labeled and described.
-- Add Student inputs and modal actions are labeled.
-- Accessibility fixes are documented in the relevant component.
+## Run the app
 
-### Feature 3 — app.config.js Migration
-- Replaced `app.json` with `app.config.js`.
-- Preserved typed routes configuration.
-- Added an environment-based `extra.apiUrl` value using `EXPO_PUBLIC_ENV`.
-- `services/api.ts` reads the base URL from `Constants.expoConfig.extra.apiUrl`.
-
-## Previous Week 7 work preserved
-- AsyncStorage persistence for the student list.
-- `LOAD` reducer action and startup restore.
-- Save-on-change with an initial-load guard.
-- Reset back to the project's seed student data.
-- Configurable SearchBar debounce delay (default 300 ms).
-- Search auto-focus after screen mount.
-- Average skills per student and previous student-count badge.
-
-## Run
+### 1. Start the REST server
 
 ```bash
+cd server
+npm install
+node index.js
+```
+
+The server runs at `http://localhost:3000`.
+
+### 2. Start Expo
+
+In another terminal:
+
+```bash
+cd ..
 npm install
 npx expo start
 ```
 
-## Final Lab Task 2 submission
-The Week 9 manual says to submit the **GitHub repository URL** using the **“MAD – Summer 25 – Final Lab Task 2 Submission”** form after all three features are working.
+On a physical phone, replace the development API URL in `app.config.js` with your computer's LAN address if needed, as described in the Week 8 manual.
+
+## EAS preview APK
+
+From `FinalTerm_Lab_2`:
+
+```bash
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --profile preview --platform android
+```
+
+The repository already includes `eas.json`, a custom `icon.png`, a custom `splash.png`, and valid bundle/package identifiers. A real EAS build URL still has to be generated from the student's Expo account and submitted through the Week 9 100-mark lab portal.
+
+## Final Lab Task 1 / 2 notes
+
+Week 8 Final Lab Task 1 and Week 9 Final Lab Task 2 use the forms named in their respective manuals. See `FINAL_SUBMISSION_CHECKLIST.md` for the exact task map, source-level audit, and the remaining device/account verification steps.
