@@ -5,8 +5,7 @@ export default function RootLayout() {
   return (
     <StudentsProvider>
       <Stack>
-        <Stack.Screen name="index" options={{ title: "Student Directory" }} />
-        <Stack.Screen name="statistics" options={{ title: "Statistics" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
     </StudentsProvider>
   );
