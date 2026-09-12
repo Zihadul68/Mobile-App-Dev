@@ -7,6 +7,7 @@ import StudentDetail from "../../components/student-detail";
 import ErrorScreen from "../../components/error-screen";
 import { Student } from "../../constants/students";
 import { useStudents } from "../../context/students-context";
+import { api } from "../../services/api";
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -21,9 +22,7 @@ function SkeletonItem() {
     return () => animation.stop();
   }, [opacity]);
   return <Animated.View style={[styles.skeletonCard, { opacity }]} accessible={false}>
-    <View style={styles.skeletonAvatar} /><View style={styles.skeletonBody}>
-      <View style={styles.skeletonName} /><View style={styles.skeletonLine} /><View style={[styles.skeletonLine, styles.short]} />
-    </View>
+    <View style={styles.skeletonAvatar} /><View style={styles.skeletonBody}><View style={styles.skeletonName} /><View style={styles.skeletonLine} /><View style={[styles.skeletonLine, styles.short]} /></View>
   </Animated.View>;
 }
 
@@ -34,6 +33,9 @@ function SkeletonList() {
 export default function HomeScreen() {
   const { students, isLoading, error, reloadStudents } = useStudents();
   const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Student[]>(students);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isAddVisible, setIsAddVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const searchRef = useRef<SearchBarHandle>(null);
@@ -43,19 +45,29 @@ export default function HomeScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const haystack = [student.name, student.department, student.studentId, student.email, ...student.skills].join(" ").toLowerCase();
-      return haystack.includes(query.trim().toLowerCase());
-    });
-  }, [students, query]);
+  useEffect(() => {
+    if (!query.trim()) {
+      setSearchResults(students);
+      setSearchError(null);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    setSearchError(null);
+    api.get<Student[]>("/students", { params: { q: query.trim() } })
+      .then(({ data }) => { if (!cancelled) setSearchResults(data); })
+      .catch((requestError) => {
+        console.error("Server-side search error:", requestError);
+        if (!cancelled) { setSearchResults([]); setSearchError("Search failed. Check that the REST server is running."); }
+      })
+      .finally(() => { if (!cancelled) setSearchLoading(false); });
+    return () => { cancelled = true; };
+  }, [query, students]);
 
+  const displayedStudents = useMemo(() => (query.trim() ? searchResults : students), [query, searchResults, students]);
   const handleSelect = useCallback((student: Student) => setSelectedStudent(student), []);
 
-  if (isLoading) {
-    return <SafeAreaView style={styles.safe}><View style={styles.container}><Text style={styles.title}>Student Directory</Text><Text style={styles.loading}>Loading students...</Text><SkeletonList /></View></SafeAreaView>;
-  }
-
+  if (isLoading) return <SafeAreaView style={styles.safe}><View style={styles.container}><Text style={styles.title}>Student Directory</Text><Text style={styles.loading}>Loading students...</Text><SkeletonList /></View></SafeAreaView>;
   if (error) return <SafeAreaView style={styles.safe}><ErrorScreen message={error} onRetry={reloadStudents} /></SafeAreaView>;
 
   return <SafeAreaView style={styles.safe}>
@@ -63,9 +75,11 @@ export default function HomeScreen() {
       <View style={styles.header}><View><Text style={styles.title}>Student Directory</Text><Text style={styles.subtitle}>REST API powered StudentDirectory</Text></View>
         <Pressable style={styles.addButton} onPress={() => setIsAddVisible(true)} accessibilityRole="button" accessibilityLabel="Add new student" accessibilityHint="Opens the Add Student form"><Text style={styles.addText}>+ Add</Text></Pressable>
       </View>
-      <SearchBar ref={searchRef} value={query} onChangeText={setQuery} debounceDelay={SEARCH_DEBOUNCE_DELAY} accessibilityLabel="Search students" accessibilityHint="Search students using the server-backed query" />
-      <Text style={styles.results}>{filteredStudents.length} result{filteredStudents.length === 1 ? "" : "s"}</Text>
-      <FlatList data={filteredStudents} keyExtractor={(item) => item.id} renderItem={({ item }) => <StudentCard student={item} onPress={handleSelect} />} contentContainerStyle={styles.list}
+      <SearchBar ref={searchRef} value={query} onChangeText={setQuery} debounceDelay={SEARCH_DEBOUNCE_DELAY} accessibilityLabel="Search students" accessibilityHint="Search by name, department, student ID, email, or skill" />
+      {searchLoading && <View style={styles.searchStatus}><ActivityIndicator size="small" /><Text style={styles.searchStatusText}>Searching server...</Text></View>}
+      {searchError && <Text style={styles.searchError}>{searchError}</Text>}
+      <Text style={styles.results}>{displayedStudents.length} result{displayedStudents.length === 1 ? "" : "s"}</Text>
+      <FlatList data={displayedStudents} keyExtractor={(item) => item.id} renderItem={({ item }) => <StudentCard student={item} onPress={handleSelect} />} contentContainerStyle={styles.list}
         ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyTitle}>{query.trim() ? "No results" : "No students yet"}</Text><Text style={styles.emptyText}>{query.trim() ? `No students match "${query.trim()}".` : "Tap + Add to add the first student."}</Text></View>} />
     </View>
     <AddStudentForm visible={isAddVisible} onClose={() => setIsAddVisible(false)} />
@@ -74,23 +88,12 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { flex: 1, padding: 16 },
+  safe: { flex: 1, backgroundColor: "#f8fafc" }, container: { flex: 1, padding: 16 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  title: { fontSize: 27, fontWeight: "800", color: "#0f172a" },
-  subtitle: { marginTop: 4, color: "#64748b" },
-  addButton: { backgroundColor: "#0D9488", borderRadius: 9, paddingHorizontal: 13, paddingVertical: 9 },
-  addText: { color: "#fff", fontWeight: "700" },
-  results: { color: "#64748b", fontWeight: "600", marginBottom: 10 },
-  loading: { marginTop: 7, marginBottom: 10, color: "#64748b" },
-  list: { paddingBottom: 24 },
-  empty: { alignItems: "center", padding: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
-  emptyText: { marginTop: 7, color: "#64748b", textAlign: "center" },
-  skeletonCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", gap: 12, borderWidth: 1, borderColor: "#e2e8f0" },
-  skeletonAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#cbd5e1" },
-  skeletonBody: { flex: 1, paddingTop: 2 },
-  skeletonName: { width: "55%", height: 17, borderRadius: 4, backgroundColor: "#cbd5e1" },
-  skeletonLine: { width: "80%", height: 11, borderRadius: 4, backgroundColor: "#e2e8f0", marginTop: 10 },
-  short: { width: "55%" },
+  title: { fontSize: 27, fontWeight: "800", color: "#0f172a" }, subtitle: { marginTop: 4, color: "#64748b" },
+  addButton: { backgroundColor: "#0D9488", borderRadius: 9, paddingHorizontal: 13, paddingVertical: 9 }, addText: { color: "#fff", fontWeight: "700" },
+  results: { color: "#64748b", fontWeight: "600", marginBottom: 10 }, loading: { marginBottom: 10, color: "#64748b" },
+  searchStatus: { flexDirection: "row", gap: 8, alignItems: "center", marginBottom: 8 }, searchStatusText: { color: "#64748b", fontSize: 12 }, searchError: { color: "#b91c1c", marginBottom: 8, fontSize: 12 },
+  list: { paddingBottom: 24 }, empty: { alignItems: "center", padding: 40 }, emptyTitle: { fontSize: 18, fontWeight: "700", color: "#0f172a" }, emptyText: { marginTop: 7, color: "#64748b", textAlign: "center" },
+  skeletonCard: { backgroundColor: "#fff", borderRadius: 12, padding: 14, marginBottom: 12, flexDirection: "row", gap: 12, borderWidth: 1, borderColor: "#e2e8f0" }, skeletonAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#cbd5e1" }, skeletonBody: { flex: 1, paddingTop: 2 }, skeletonName: { width: "55%", height: 17, borderRadius: 4, backgroundColor: "#cbd5e1" }, skeletonLine: { width: "80%", height: 11, borderRadius: 4, backgroundColor: "#e2e8f0", marginTop: 10 }, short: { width: "55%" },
 });
