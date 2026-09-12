@@ -1,6 +1,6 @@
 import React, {
-  createContext,
   PropsWithChildren,
+  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -8,18 +8,16 @@ import React, {
   useReducer,
   useState,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { initialStudents, Student } from "../constants/students";
+import { api } from "../services/api";
+import { Student } from "../constants/students";
 import { StudentsAction, StudentsState, studentsReducer } from "./students-reducer";
 
-const STORAGE_KEY = "@student_directory";
-
 type StudentsContextValue = {
-  students: Student[];
-  addStudent: (student: Student) => void;
-  removeStudent: (id: string) => void;
-  resetStudents: () => void;
+  students: StudentsState;
+  dispatch: React.Dispatch<StudentsAction>;
   isLoading: boolean;
+  error: string | null;
+  reloadStudents: () => void;
 };
 
 const StudentsContext = createContext<StudentsContextValue | undefined>(undefined);
@@ -27,64 +25,54 @@ const StudentsContext = createContext<StudentsContextValue | undefined>(undefine
 export function StudentsProvider({ children }: PropsWithChildren) {
   const [students, dispatch] = useReducer<React.Reducer<StudentsState, StudentsAction>>(
     studentsReducer,
-    initialStudents
+    []
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // LOAD: read the saved student list once when the app starts.
+  const reloadStudents = useCallback(() => {
+    setError(null);
+    setIsLoading(true);
+    setReloadKey((key) => key + 1);
+  }, []);
+
+  // Week 8: the server replaces Week 7 AsyncStorage as the single source of truth.
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (raw) {
-          const saved = JSON.parse(raw) as StudentsState;
-          dispatch({ type: "LOAD", payload: saved });
+    let cancelled = false;
+
+    api
+      .get<StudentsState>("/students")
+      .then(({ data }) => {
+        if (!cancelled) dispatch({ type: "LOAD", payload: data });
+      })
+      .catch((requestError) => {
+        if (!cancelled) {
+          setError("Could not load students. Is the REST server running?");
+          console.error("Students API load error:", requestError);
         }
       })
-      .catch((error) => console.error("AsyncStorage load error:", error))
-      .finally(() => setIsLoading(false));
-  }, []);
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
 
-  // SAVE: write the student list whenever it changes.
-  useEffect(() => {
-    if (isLoading) return;
-
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(students)).catch((error) =>
-      console.error("AsyncStorage save error:", error)
-    );
-  }, [students]);
-
-  const addStudent = useCallback((student: Student) => {
-    dispatch({ type: "ADD_STUDENT", payload: student });
-  }, []);
-
-  const removeStudent = useCallback((id: string) => {
-    dispatch({ type: "REMOVE_STUDENT", payload: id });
-  }, []);
-
-  const resetStudents = useCallback(() => {
-    dispatch({ type: "RESET" });
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   const value = useMemo(
-    () => ({
-      students,
-      addStudent,
-      removeStudent,
-      resetStudents,
-      isLoading,
-    }),
-    [students, addStudent, removeStudent, resetStudents, isLoading]
+    () => ({ students, dispatch, isLoading, error, reloadStudents }),
+    [students, isLoading, error, reloadStudents]
   );
 
   return <StudentsContext.Provider value={value}>{children}</StudentsContext.Provider>;
 }
 
-export function useStudents() {
+export function useStudents(): StudentsContextValue {
   const context = useContext(StudentsContext);
-
   if (!context) {
     throw new Error("useStudents must be used inside StudentsProvider");
   }
-
   return context;
 }
