@@ -1,33 +1,31 @@
-# Final Lab Task 2 – Week 7 + Week 9 cumulative project
+# Final Cumulative Lab 2 Status — Weeks 7–9
 
-This folder contains the cumulative StudentDirectory project for the final-term work. Week 7 persistence is preserved, and the Week 9 **Final Lab Task 2** requirements are added on top of it.
+This folder contains the latest cumulative StudentDirectory implementation through Week 9.
 
-## Week 7 persistence retained
-- AsyncStorage stores the student list.
-- `LOAD` restores the complete saved list on startup.
-- Saving runs when the list changes and is skipped during initial loading.
-- `isLoading` is exposed by `StudentsProvider`.
-- Reset restores the project's original seed data and persists it.
+## Week 7 — historical implementation
+Week 7 AsyncStorage persistence was implemented in earlier commits. The Week 8 manual explicitly instructs students to remove the AsyncStorage load/save effects and make the REST server the single source of truth, so the live implementation now follows Week 8 instead of running both systems at once.
 
-## Week 9 Final Lab Task 2
-### Feature 1 — Skeleton Loading
-- Six animated skeleton rows are rendered while student data loads.
-- Animation uses `Animated.loop` and `Animated.sequence`, pulsing opacity between 1.0 and 0.3.
+## Week 8 — REST API implementation
+- Express server in `server/index.js` with GET `/students`, GET `/students/:id`, POST `/students`, PATCH `/students/:id`, and DELETE `/students/:id`.
+- CORS and `express.json()` middleware.
+- Shared Axios instance in `services/api.ts` with timeout and JSON content type.
+- StudentsProvider loads from GET `/students` and exposes `students`, `isLoading`, `error`, and a retry function.
+- Add Student POSTs to the server and uses the server-assigned ID.
+- StudentDetail refetches by ID, edits bio via PATCH, and deletes only after DELETE succeeds.
+- GET `/students?q=` performs server-side search.
 
-### Feature 2 — Accessibility Audit & Fix
-- Main interactive controls have `accessibilityRole`, `accessibilityLabel`, and `accessibilityHint`.
-- Student removal, reset, navigation, and Add Student modal controls are labeled.
-- Search and form inputs have descriptive accessibility labels/hints.
-- The relevant accessibility fixes are documented in component comments.
+## Week 9 — final polish and Final Lab Task 2
+- Reusable ErrorScreen with retry action.
+- Loading/error guards on Home and Statistics.
+- Six animated skeleton rows using `Animated.loop` and `Animated.sequence`.
+- Empty states for no students and no search results.
+- Accessibility roles, labels, and hints on interactive controls and descriptive labels on avatar images.
+- Accessibility-fix comments in relevant components.
+- Dynamic `app.config.js` with custom name, icon, splash, identifiers, and environment-based API URL.
+- Custom PNG icon/splash assets.
+- `eas.json` with an Android preview APK profile.
 
-### Feature 3 — app.config.js Migration
-- `app.json` was replaced with `app.config.js`.
-- Typed-route configuration was preserved.
-- `extra.apiUrl` switches between the Week 9 development URL and production placeholder based on `EXPO_PUBLIC_ENV`.
-- `services/api.ts` reads the configured URL through `Constants.expoConfig.extra.apiUrl`.
+## Final Lab Task 2 submission
+The Week 9 Section 8 task is the form named **MAD – Summer 25 – Final Lab Task 2 Submission**. It requires the GitHub repository URL after the three 10-mark features are complete.
 
-## Submission
-The Week 9 manual's Section 8 names the submission **“MAD – Summer 25 – Final Lab Task 2 Submission”** and instructs students to submit the GitHub repository URL after all three features are working.
-
-## Runtime verification still required
-Run the app locally and verify the skeleton loading, accessibility behavior with TalkBack/VoiceOver, AsyncStorage persistence, Reset behavior, and that the Expo config resolves correctly. The repository code has been updated, but a local device/emulator test cannot be performed through GitHub alone.
+See `FINAL_SUBMISSION_CHECKLIST.md` for the six graded task sections across the four supplied manuals and the exact remaining account/device verification steps.
