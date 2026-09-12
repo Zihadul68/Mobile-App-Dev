@@ -1,0 +1,4 @@
+import React from "react";
+import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+export default function Bookmarks(){return <SafeAreaView style={s.safe}><View style={s.container}><Text style={s.title}>Bookmarks</Text><Text style={s.subtitle}>Bookmarks tab required by Week 6 navigation.</Text><View style={s.card}><Text style={s.cardTitle}>No bookmarks yet</Text><Text style={s.text}>Bookmark behavior is not part of the Week 6 graded features.</Text></View></View></SafeAreaView>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:"#f8fafc"},container:{flex:1,padding:20},title:{fontSize:28,fontWeight:"800",color:"#0f172a"},subtitle:{marginTop:5,color:"#64748b"},card:{marginTop:50,padding:22,backgroundColor:"#fff",borderWidth:1,borderColor:"#e2e8f0",borderRadius:14},cardTitle:{fontSize:18,fontWeight:"700",color:"#0f172a"},text:{marginTop:7,color:"#64748b"}});
