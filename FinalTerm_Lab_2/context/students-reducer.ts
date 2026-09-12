@@ -1,15 +1,13 @@
 import { Student } from "../constants/students";
-import { initialStudents } from "../constants/students";
 
-// State is the complete list of students.
 export type StudentsState = Student[];
 
-// Every possible reducer action.
 export type StudentsAction =
   | { type: "ADD_STUDENT"; payload: Student }
   | { type: "REMOVE_STUDENT"; payload: string }
-  | { type: "RESET" }
-  | { type: "LOAD"; payload: Student[] };
+  | { type: "RESET"; payload?: Student[] }
+  | { type: "LOAD"; payload: Student[] }
+  | { type: "UPDATE_STUDENT"; payload: Student };
 
 export function studentsReducer(
   state: StudentsState,
@@ -23,11 +21,17 @@ export function studentsReducer(
       return state.filter((student) => student.id !== action.payload);
 
     case "RESET":
-      return initialStudents;
+      return action.payload ?? state;
 
     case "LOAD":
-      // Replace the complete list with the data loaded from AsyncStorage.
+      // Week 7: LOAD replaces the full list. In the Week 8 live app this
+      // action hydrates the list from the API, which supersedes AsyncStorage.
       return action.payload;
+
+    case "UPDATE_STUDENT":
+      return state.map((student) =>
+        student.id === action.payload.id ? action.payload : student
+      );
 
     default:
       return state;
